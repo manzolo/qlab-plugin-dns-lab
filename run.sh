@@ -156,9 +156,9 @@ write_files:
           file "/etc/bind/zones/db.lab.local";
       };
 
-      zone "1.168.192.in-addr.arpa" {
+      zone "30.20.10.in-addr.arpa" {
           type master;
-          file "/etc/bind/zones/db.192.168.1";
+          file "/etc/bind/zones/db.10.20.30";
       };
 
   - path: /etc/bind/zones/db.lab.local
@@ -175,12 +175,12 @@ write_files:
       @       IN      NS      ns1.lab.local.
 
       ; A records
-      ns1     IN      A       192.168.1.1
-      web     IN      A       192.168.1.10
-      mail    IN      A       192.168.1.20
-      db      IN      A       192.168.1.30
-      app     IN      A       192.168.1.40
-      mail2   IN      A       192.168.1.21
+      ns1     IN      A       10.20.30.1
+      web     IN      A       10.20.30.10
+      mail    IN      A       10.20.30.20
+      db      IN      A       10.20.30.30
+      app     IN      A       10.20.30.40
+      mail2   IN      A       10.20.30.21
 
       ; AAAA records
       web     IN      AAAA    2001:db8::10
@@ -201,7 +201,7 @@ write_files:
       _http._tcp      IN      SRV     10 0 80 web.lab.local.
       _mysql._tcp     IN      SRV     10 0 3306 db.lab.local.
 
-  - path: /etc/bind/zones/db.192.168.1
+  - path: /etc/bind/zones/db.10.20.30
     content: |
       $TTL    604800
       @       IN      SOA     ns1.lab.local. admin.lab.local. (
@@ -231,9 +231,9 @@ runcmd:
   - mkdir -p /etc/bind/zones
   - chown bind:bind /etc/bind/zones
   - chown bind:bind /etc/bind/zones/db.lab.local
-  - chown bind:bind /etc/bind/zones/db.192.168.1
+  - chown bind:bind /etc/bind/zones/db.10.20.30
   - named-checkzone lab.local /etc/bind/zones/db.lab.local
-  - named-checkzone 1.168.192.in-addr.arpa /etc/bind/zones/db.192.168.1
+  - named-checkzone 30.20.10.in-addr.arpa /etc/bind/zones/db.10.20.30
   - named-checkconf
   - systemctl restart bind9
   - systemctl enable bind9
@@ -293,7 +293,7 @@ write_files:
         \033[1;33mUseful commands:\033[0m
           \033[0;32mdig @10.0.2.2 -p 5354 web.lab.local\033[0m
           \033[0;32mdig @10.0.2.2 -p 5354 lab.local MX\033[0m
-          \033[0;32mdig @10.0.2.2 -p 5354 -x 192.168.1.10\033[0m
+          \033[0;32mdig @10.0.2.2 -p 5354 -x 10.20.30.10\033[0m
           \033[0;32mnslookup -port=5354 web.lab.local 10.0.2.2\033[0m
           \033[0;32mhost -p 5354 web.lab.local 10.0.2.2\033[0m
 
@@ -387,7 +387,7 @@ echo "    SSH:   qlab shell $SERVER_VM"
 echo "    Log:   qlab log $SERVER_VM"
 echo "    Port:  $SERVER_SSH_PORT"
 echo "    DNS:   localhost:$DNS_PORT (UDP+TCP)"
-echo "    Zone:  lab.local (forward) + 1.168.192.in-addr.arpa (reverse)"
+echo "    Zone:  lab.local (forward) + 30.20.10.in-addr.arpa (reverse)"
 echo ""
 echo "  DNS Client VM:"
 echo "    SSH:   qlab shell $CLIENT_VM"
@@ -401,7 +401,7 @@ echo ""
 echo "  Quick DNS test (from client VM):"
 echo "    dig @10.0.2.2 -p $DNS_PORT web.lab.local"
 echo "    dig @10.0.2.2 -p $DNS_PORT lab.local MX"
-echo "    dig @10.0.2.2 -p $DNS_PORT -x 192.168.1.10"
+echo "    dig @10.0.2.2 -p $DNS_PORT -x 10.20.30.10"
 echo ""
 echo "  Wait ~90s for boot + package installation."
 echo ""

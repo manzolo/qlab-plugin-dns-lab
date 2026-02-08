@@ -17,11 +17,11 @@ A [QLab](https://github.com/manzolo/qlab) plugin that creates two virtual machin
 |------|------|-------|---------|
 | SOA | `lab.local` | `ns1.lab.local. admin.lab.local.` | Start of authority |
 | NS | `lab.local` | `ns1.lab.local.` | Nameserver |
-| A | `ns1.lab.local.` | `192.168.1.1` | DNS server |
-| A | `web.lab.local.` | `192.168.1.10` | Web server |
-| A | `mail.lab.local.` | `192.168.1.20` | Mail server |
-| A | `db.lab.local.` | `192.168.1.30` | Database server |
-| A | `app.lab.local.` | `192.168.1.40` | Application server |
+| A | `ns1.lab.local.` | `10.20.30.1` | DNS server |
+| A | `web.lab.local.` | `10.20.30.10` | Web server |
+| A | `mail.lab.local.` | `10.20.30.20` | Mail server |
+| A | `db.lab.local.` | `10.20.30.30` | Database server |
+| A | `app.lab.local.` | `10.20.30.40` | Application server |
 | AAAA | `web.lab.local.` | `2001:db8::10` | IPv6 web server |
 | CNAME | `www.lab.local.` | `web.lab.local.` | Alias for web |
 | CNAME | `ftp.lab.local.` | `web.lab.local.` | Another alias |
@@ -31,11 +31,11 @@ A [QLab](https://github.com/manzolo/qlab) plugin that creates two virtual machin
 | TXT | `_dmarc.lab.local.` | `"v=DMARC1; p=reject"` | DMARC record |
 | SRV | `_http._tcp.lab.local.` | `10 0 80 web.lab.local.` | HTTP service |
 | SRV | `_mysql._tcp.lab.local.` | `10 0 3306 db.lab.local.` | MySQL service |
-| PTR | `1.1.168.192.in-addr.arpa.` | `ns1.lab.local.` | Reverse DNS |
-| PTR | `10.1.168.192.in-addr.arpa.` | `web.lab.local.` | Reverse DNS |
-| PTR | `20.1.168.192.in-addr.arpa.` | `mail.lab.local.` | Reverse DNS |
-| PTR | `30.1.168.192.in-addr.arpa.` | `db.lab.local.` | Reverse DNS |
-| PTR | `40.1.168.192.in-addr.arpa.` | `app.lab.local.` | Reverse DNS |
+| PTR | `1.30.20.10.in-addr.arpa.` | `ns1.lab.local.` | Reverse DNS |
+| PTR | `10.30.20.10.in-addr.arpa.` | `web.lab.local.` | Reverse DNS |
+| PTR | `20.30.20.10.in-addr.arpa.` | `mail.lab.local.` | Reverse DNS |
+| PTR | `30.30.20.10.in-addr.arpa.` | `db.lab.local.` | Reverse DNS |
+| PTR | `40.30.20.10.in-addr.arpa.` | `app.lab.local.` | Reverse DNS |
 
 ## Architecture
 
@@ -50,7 +50,7 @@ A [QLab](https://github.com/manzolo/qlab) plugin that creates two virtual machin
 │  │                         │  │                │ │
 │  │  BIND9 (:53)            │  │  dig           │ │
 │  │  Zone: lab.local        │  │  nslookup      │ │
-│  │  Zone: 1.168.192.arpa   │  │  host          │ │
+│  │  Zone: 30.20.10.arpa   │  │  host          │ │
 │  │  named-checkzone        │  │  whois         │ │
 │  └───────────┬─────────────┘  └──────┬─────────┘ │
 │              │     10.0.2.2          │           │
@@ -100,7 +100,7 @@ dig @10.0.2.2 -p 5354 web.lab.local AAAA
 ```
 
 **Expected results:**
-- `web.lab.local` → `192.168.1.10`
+- `web.lab.local` → `10.20.30.10`
 - `web.lab.local AAAA` → `2001:db8::10`
 
 ---
@@ -155,19 +155,19 @@ dig @10.0.2.2 -p 5354 mail2.lab.local +short
 
 ```bash
 # Reverse lookup: IP → hostname
-dig @10.0.2.2 -p 5354 -x 192.168.1.10
+dig @10.0.2.2 -p 5354 -x 10.20.30.10
 
 # Short output
-dig @10.0.2.2 -p 5354 -x 192.168.1.10 +short
+dig @10.0.2.2 -p 5354 -x 10.20.30.10 +short
 
 # Try all reverse lookups
-dig @10.0.2.2 -p 5354 -x 192.168.1.1 +short     # ns1
-dig @10.0.2.2 -p 5354 -x 192.168.1.20 +short    # mail
-dig @10.0.2.2 -p 5354 -x 192.168.1.30 +short    # db
-dig @10.0.2.2 -p 5354 -x 192.168.1.40 +short    # app
+dig @10.0.2.2 -p 5354 -x 10.20.30.1 +short     # ns1
+dig @10.0.2.2 -p 5354 -x 10.20.30.20 +short    # mail
+dig @10.0.2.2 -p 5354 -x 10.20.30.30 +short    # db
+dig @10.0.2.2 -p 5354 -x 10.20.30.40 +short    # app
 ```
 
-**Lesson:** PTR records map IP addresses back to hostnames. They are stored in a separate reverse zone (`1.168.192.in-addr.arpa`).
+**Lesson:** PTR records map IP addresses back to hostnames. They are stored in a separate reverse zone (`30.20.10.in-addr.arpa`).
 
 ---
 
@@ -240,7 +240,7 @@ cat /etc/bind/zones/db.lab.local
 sudo bash -c 'cat >> /etc/bind/zones/db.lab.local << EOF
 
 ; Added by student
-api     IN      A       192.168.1.50
+api     IN      A       10.20.30.50
 EOF'
 
 # IMPORTANT: Increment the serial number
@@ -258,7 +258,7 @@ sudo rndc reload
 ```bash
 # Verify the new record
 dig @10.0.2.2 -p 5354 api.lab.local +short
-# Should return: 192.168.1.50
+# Should return: 10.20.30.50
 ```
 
 **Lesson:** When modifying zone files, always increment the serial number and validate with `named-checkzone` before reloading.
@@ -279,7 +279,7 @@ nslookup -port=5354 -type=TXT lab.local 10.0.2.2
 host -p 5354 web.lab.local 10.0.2.2
 host -p 5354 -t MX lab.local 10.0.2.2
 host -p 5354 -t TXT lab.local 10.0.2.2
-host -p 5354 192.168.1.10 10.0.2.2    # reverse lookup
+host -p 5354 10.20.30.10 10.0.2.2    # reverse lookup
 ```
 
 **Lesson:** `dig` gives the most detailed output, `nslookup` is widely available across platforms, and `host` provides the simplest human-readable format.
