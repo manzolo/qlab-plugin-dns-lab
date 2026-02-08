@@ -268,11 +268,20 @@ ssh_pwauth: true
 package_update: true
 packages:
   - dnsutils
+  - dnsmasq
   - net-tools
   - iputils-ping
   - curl
   - whois
 write_files:
+  - path: /etc/dnsmasq.d/lab-dns.conf
+    content: |
+      # Forward all queries to the DNS lab server via host port forwarding
+      no-resolv
+      server=10.0.2.2#5354
+      # Add lab.local to search domain
+      domain=lab.local
+      local=/lab.local/
   - path: /etc/motd.raw
     content: |
       \033[1;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m
@@ -281,7 +290,8 @@ write_files:
 
         \033[1;33mRole:\033[0m  Query the DNS server to explore record types
 
-        \033[1;33mDNS Server:\033[0m  \033[0;32m10.0.2.2\033[0m port \033[0;32m5354\033[0m
+        \033[1;33mDNS Server:\033[0m  \033[0;32m10.0.2.2\033[0m port \033[0;32m5354\033[0m (via dnsmasq)
+        \033[1;33mResolution:\033[0m  \033[0;32mping web.lab.local\033[0m works natively!
 
         \033[1;33mRecord types to explore:\033[0m
           \033[0;32mA\033[0m       IPv4 address          \033[0;32mAAAA\033[0m    IPv6 address
@@ -309,6 +319,13 @@ runcmd:
   - printf '%b\n' "$(cat /etc/motd.raw)" > /etc/motd
   - rm -f /etc/motd.raw
   - systemctl restart sshd
+  - systemctl stop systemd-resolved || true
+  - systemctl disable systemd-resolved || true
+  - rm -f /etc/resolv.conf
+  - echo "nameserver 127.0.0.1" > /etc/resolv.conf
+  - echo "search lab.local" >> /etc/resolv.conf
+  - systemctl restart dnsmasq
+  - systemctl enable dnsmasq
   - echo "=== dns-lab-client VM is ready! ==="
 USERDATA
 
