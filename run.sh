@@ -8,7 +8,7 @@ SERVER_VM="dns-lab-server"
 CLIENT_VM="dns-lab-client"
 SERVER_SSH_PORT=2228
 CLIENT_SSH_PORT=2229
-DNS_PORT=5353
+DNS_PORT=5354
 
 echo "============================================="
 echo "  dns-lab: DNS & BIND9 Lab"
@@ -281,7 +281,7 @@ write_files:
 
         \033[1;33mRole:\033[0m  Query the DNS server to explore record types
 
-        \033[1;33mDNS Server:\033[0m  \033[0;32m10.0.2.2\033[0m port \033[0;32m5353\033[0m
+        \033[1;33mDNS Server:\033[0m  \033[0;32m10.0.2.2\033[0m port \033[0;32m5354\033[0m
 
         \033[1;33mRecord types to explore:\033[0m
           \033[0;32mA\033[0m       IPv4 address          \033[0;32mAAAA\033[0m    IPv6 address
@@ -291,11 +291,11 @@ write_files:
           \033[0;32mSOA\033[0m     Start of authority
 
         \033[1;33mUseful commands:\033[0m
-          \033[0;32mdig @10.0.2.2 -p 5353 web.lab.local\033[0m
-          \033[0;32mdig @10.0.2.2 -p 5353 lab.local MX\033[0m
-          \033[0;32mdig @10.0.2.2 -p 5353 -x 192.168.1.10\033[0m
-          \033[0;32mnslookup -port=5353 web.lab.local 10.0.2.2\033[0m
-          \033[0;32mhost -p 5353 web.lab.local 10.0.2.2\033[0m
+          \033[0;32mdig @10.0.2.2 -p 5354 web.lab.local\033[0m
+          \033[0;32mdig @10.0.2.2 -p 5354 lab.local MX\033[0m
+          \033[0;32mdig @10.0.2.2 -p 5354 -x 192.168.1.10\033[0m
+          \033[0;32mnslookup -port=5354 web.lab.local 10.0.2.2\033[0m
+          \033[0;32mhost -p 5354 web.lab.local 10.0.2.2\033[0m
 
         \033[1;33mCredentials:\033[0m  \033[1;36mlabuser\033[0m / \033[1;36mlabpass\033[0m
         \033[1;33mExit:\033[0m         type '\033[1;31mexit\033[0m'

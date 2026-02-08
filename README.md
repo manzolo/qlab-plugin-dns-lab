@@ -42,7 +42,7 @@ A [QLab](https://github.com/manzolo/qlab) plugin that creates two virtual machin
 ```
 ┌──────────────────── Host ────────────────────────┐
 │                                                  │
-│  localhost:5353  ── DNS port forwarding (UDP+TCP) │
+│  localhost:5354  ── DNS port forwarding (UDP+TCP) │
 │                                                  │
 │  ┌─────────────────────────┐  ┌────────────────┐ │
 │  │ dns-lab-server          │  │ dns-lab-client │ │
@@ -56,7 +56,7 @@ A [QLab](https://github.com/manzolo/qlab) plugin that creates two virtual machin
 │              │     10.0.2.2          │           │
 │              └───────────────────────┘           │
 │         client queries server via                │
-│         dig @10.0.2.2 -p 5353                    │
+│         dig @10.0.2.2 -p 5354                    │
 └──────────────────────────────────────────────────┘
 ```
 
@@ -84,19 +84,19 @@ qlab shell dns-lab-client    # connect to client
 
 ```bash
 # Query the A record for web.lab.local
-dig @10.0.2.2 -p 5353 web.lab.local
+dig @10.0.2.2 -p 5354 web.lab.local
 
 # Query with short output
-dig @10.0.2.2 -p 5353 web.lab.local +short
+dig @10.0.2.2 -p 5354 web.lab.local +short
 
 # Query all A records
-dig @10.0.2.2 -p 5353 ns1.lab.local +short
-dig @10.0.2.2 -p 5353 mail.lab.local +short
-dig @10.0.2.2 -p 5353 db.lab.local +short
-dig @10.0.2.2 -p 5353 app.lab.local +short
+dig @10.0.2.2 -p 5354 ns1.lab.local +short
+dig @10.0.2.2 -p 5354 mail.lab.local +short
+dig @10.0.2.2 -p 5354 db.lab.local +short
+dig @10.0.2.2 -p 5354 app.lab.local +short
 
 # Query the AAAA (IPv6) record
-dig @10.0.2.2 -p 5353 web.lab.local AAAA
+dig @10.0.2.2 -p 5354 web.lab.local AAAA
 ```
 
 **Expected results:**
@@ -111,16 +111,16 @@ dig @10.0.2.2 -p 5353 web.lab.local AAAA
 
 ```bash
 # Query a CNAME record
-dig @10.0.2.2 -p 5353 www.lab.local
+dig @10.0.2.2 -p 5354 www.lab.local
 
 # Notice: the response includes both the CNAME and the resolved A record
-dig @10.0.2.2 -p 5353 www.lab.local +short
+dig @10.0.2.2 -p 5354 www.lab.local +short
 
 # Try another alias
-dig @10.0.2.2 -p 5353 ftp.lab.local
+dig @10.0.2.2 -p 5354 ftp.lab.local
 
 # Query specifically for CNAME type
-dig @10.0.2.2 -p 5353 www.lab.local CNAME
+dig @10.0.2.2 -p 5354 www.lab.local CNAME
 ```
 
 **Lesson:** CNAME records create aliases. When you query `www.lab.local`, DNS first resolves the CNAME to `web.lab.local`, then returns its A record.
@@ -133,16 +133,16 @@ dig @10.0.2.2 -p 5353 www.lab.local CNAME
 
 ```bash
 # Query MX records for the domain
-dig @10.0.2.2 -p 5353 lab.local MX
+dig @10.0.2.2 -p 5354 lab.local MX
 
 # Observe the priority values (lower = higher priority)
 # mail.lab.local has priority 10 (primary)
 # mail2.lab.local has priority 20 (backup)
-dig @10.0.2.2 -p 5353 lab.local MX +short
+dig @10.0.2.2 -p 5354 lab.local MX +short
 
 # Verify the mail servers have A records
-dig @10.0.2.2 -p 5353 mail.lab.local +short
-dig @10.0.2.2 -p 5353 mail2.lab.local +short
+dig @10.0.2.2 -p 5354 mail.lab.local +short
+dig @10.0.2.2 -p 5354 mail2.lab.local +short
 ```
 
 **Lesson:** MX records direct email. Lower priority numbers indicate preferred servers. If `mail.lab.local` (priority 10) is down, email is routed to `mail2.lab.local` (priority 20).
@@ -155,16 +155,16 @@ dig @10.0.2.2 -p 5353 mail2.lab.local +short
 
 ```bash
 # Reverse lookup: IP → hostname
-dig @10.0.2.2 -p 5353 -x 192.168.1.10
+dig @10.0.2.2 -p 5354 -x 192.168.1.10
 
 # Short output
-dig @10.0.2.2 -p 5353 -x 192.168.1.10 +short
+dig @10.0.2.2 -p 5354 -x 192.168.1.10 +short
 
 # Try all reverse lookups
-dig @10.0.2.2 -p 5353 -x 192.168.1.1 +short     # ns1
-dig @10.0.2.2 -p 5353 -x 192.168.1.20 +short    # mail
-dig @10.0.2.2 -p 5353 -x 192.168.1.30 +short    # db
-dig @10.0.2.2 -p 5353 -x 192.168.1.40 +short    # app
+dig @10.0.2.2 -p 5354 -x 192.168.1.1 +short     # ns1
+dig @10.0.2.2 -p 5354 -x 192.168.1.20 +short    # mail
+dig @10.0.2.2 -p 5354 -x 192.168.1.30 +short    # db
+dig @10.0.2.2 -p 5354 -x 192.168.1.40 +short    # app
 ```
 
 **Lesson:** PTR records map IP addresses back to hostnames. They are stored in a separate reverse zone (`1.168.192.in-addr.arpa`).
@@ -177,14 +177,14 @@ dig @10.0.2.2 -p 5353 -x 192.168.1.40 +short    # app
 
 ```bash
 # Query TXT records for the domain
-dig @10.0.2.2 -p 5353 lab.local TXT
+dig @10.0.2.2 -p 5354 lab.local TXT
 
 # Query the DMARC record
-dig @10.0.2.2 -p 5353 _dmarc.lab.local TXT
+dig @10.0.2.2 -p 5354 _dmarc.lab.local TXT
 
 # Short output
-dig @10.0.2.2 -p 5353 lab.local TXT +short
-dig @10.0.2.2 -p 5353 _dmarc.lab.local TXT +short
+dig @10.0.2.2 -p 5354 lab.local TXT +short
+dig @10.0.2.2 -p 5354 _dmarc.lab.local TXT +short
 ```
 
 **Lesson:** TXT records store arbitrary text. Common uses include SPF (which servers can send email for a domain) and DMARC (email authentication policy). These are critical for email security and deliverability.
@@ -197,8 +197,8 @@ dig @10.0.2.2 -p 5353 _dmarc.lab.local TXT +short
 
 ```bash
 # Query SRV records
-dig @10.0.2.2 -p 5353 _http._tcp.lab.local SRV
-dig @10.0.2.2 -p 5353 _mysql._tcp.lab.local SRV
+dig @10.0.2.2 -p 5354 _http._tcp.lab.local SRV
+dig @10.0.2.2 -p 5354 _mysql._tcp.lab.local SRV
 
 # SRV format: priority weight port target
 # 10 0 80 web.lab.local.  → HTTP on web:80
@@ -215,13 +215,13 @@ dig @10.0.2.2 -p 5353 _mysql._tcp.lab.local SRV
 
 ```bash
 # Query the SOA record
-dig @10.0.2.2 -p 5353 lab.local SOA
+dig @10.0.2.2 -p 5354 lab.local SOA
 
 # Query NS records
-dig @10.0.2.2 -p 5353 lab.local NS
+dig @10.0.2.2 -p 5354 lab.local NS
 
 # Query ANY to see all records for the domain
-dig @10.0.2.2 -p 5353 lab.local ANY
+dig @10.0.2.2 -p 5354 lab.local ANY
 ```
 
 **Lesson:** The SOA record defines the authoritative information about a zone: the primary nameserver, admin email, serial number, and timing parameters. NS records declare which servers are authoritative for the zone.
@@ -257,7 +257,7 @@ sudo rndc reload
 
 ```bash
 # Verify the new record
-dig @10.0.2.2 -p 5353 api.lab.local +short
+dig @10.0.2.2 -p 5354 api.lab.local +short
 # Should return: 192.168.1.50
 ```
 
@@ -271,15 +271,15 @@ dig @10.0.2.2 -p 5353 api.lab.local +short
 
 ```bash
 # nslookup — interactive-style queries
-nslookup -port=5353 web.lab.local 10.0.2.2
-nslookup -port=5353 -type=MX lab.local 10.0.2.2
-nslookup -port=5353 -type=TXT lab.local 10.0.2.2
+nslookup -port=5354 web.lab.local 10.0.2.2
+nslookup -port=5354 -type=MX lab.local 10.0.2.2
+nslookup -port=5354 -type=TXT lab.local 10.0.2.2
 
 # host — simpler output format
-host -p 5353 web.lab.local 10.0.2.2
-host -p 5353 -t MX lab.local 10.0.2.2
-host -p 5353 -t TXT lab.local 10.0.2.2
-host -p 5353 192.168.1.10 10.0.2.2    # reverse lookup
+host -p 5354 web.lab.local 10.0.2.2
+host -p 5354 -t MX lab.local 10.0.2.2
+host -p 5354 -t TXT lab.local 10.0.2.2
+host -p 5354 192.168.1.10 10.0.2.2    # reverse lookup
 ```
 
 **Lesson:** `dig` gives the most detailed output, `nslookup` is widely available across platforms, and `host` provides the simplest human-readable format.
@@ -292,21 +292,21 @@ host -p 5353 192.168.1.10 10.0.2.2    # reverse lookup
 
 ```bash
 # Trace the full resolution path
-dig @10.0.2.2 -p 5353 web.lab.local +trace
+dig @10.0.2.2 -p 5354 web.lab.local +trace
 
 # Short output (just the answer)
-dig @10.0.2.2 -p 5353 web.lab.local +short
+dig @10.0.2.2 -p 5354 web.lab.local +short
 
 # Show only the answer section
-dig @10.0.2.2 -p 5353 web.lab.local +noall +answer
+dig @10.0.2.2 -p 5354 web.lab.local +noall +answer
 
 # Query with specific options
-dig @10.0.2.2 -p 5353 web.lab.local +norecurse    # non-recursive query
-dig @10.0.2.2 -p 5353 web.lab.local +tcp           # force TCP instead of UDP
-dig @10.0.2.2 -p 5353 web.lab.local +stats         # show query statistics
+dig @10.0.2.2 -p 5354 web.lab.local +norecurse    # non-recursive query
+dig @10.0.2.2 -p 5354 web.lab.local +tcp           # force TCP instead of UDP
+dig @10.0.2.2 -p 5354 web.lab.local +stats         # show query statistics
 
 # Check zone transfer (AXFR)
-dig @10.0.2.2 -p 5353 lab.local AXFR
+dig @10.0.2.2 -p 5354 lab.local AXFR
 ```
 
 **Lesson:** `dig` has many options for controlling output and query behavior. `+trace` shows the full delegation chain, `+short` is great for scripting, and `+tcp` forces TCP for large responses.
