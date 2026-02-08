@@ -17,7 +17,7 @@ echo ""
 echo "  This lab creates two VMs:"
 echo ""
 echo "    1. $SERVER_VM  (SSH port $SERVER_SSH_PORT)"
-echo "       Runs BIND9 with forward zone (lab.local) and reverse zone"
+echo "       Runs BIND9 with forward zone (lab.qlab) and reverse zone"
 echo "       Record types: A, AAAA, CNAME, MX, PTR, NS, TXT, SRV, SOA"
 echo ""
 echo "    2. $CLIENT_VM  (SSH port $CLIENT_SSH_PORT)"
@@ -128,7 +128,7 @@ write_files:
           • Manage forward and reverse DNS zones
           • Add, modify, and validate DNS records
 
-        \033[1;33mPre-configured DNS records (lab.local):\033[0m
+        \033[1;33mPre-configured DNS records (lab.qlab):\033[0m
           \033[0;32mA\033[0m       ns1, web, mail, db, app
           \033[0;32mAAAA\033[0m    web (IPv6)
           \033[0;32mCNAME\033[0m   www → web, ftp → web
@@ -138,12 +138,12 @@ write_files:
           \033[0;32mPTR\033[0m     reverse lookups for all hosts
 
         \033[1;33mUseful commands:\033[0m
-          \033[0;32msudo named-checkzone lab.local /etc/bind/zones/db.lab.local\033[0m
+          \033[0;32msudo named-checkzone lab.qlab /etc/bind/zones/db.lab.qlab\033[0m
           \033[0;32msudo named-checkconf\033[0m
           \033[0;32msudo systemctl restart bind9\033[0m
           \033[0;32msudo rndc reload\033[0m
-          \033[0;32mdig @localhost lab.local ANY\033[0m
-          \033[0;32mcat /etc/bind/zones/db.lab.local\033[0m
+          \033[0;32mdig @localhost lab.qlab ANY\033[0m
+          \033[0;32mcat /etc/bind/zones/db.lab.qlab\033[0m
 
         \033[1;33mCredentials:\033[0m  \033[1;36mlabuser\033[0m / \033[1;36mlabpass\033[0m
         \033[1;33mExit:\033[0m         type '\033[1;31mexit\033[0m'
@@ -167,9 +167,9 @@ write_files:
 
   - path: /etc/bind/named.conf.local
     content: |
-      zone "lab.local" {
+      zone "lab.qlab" {
           type master;
-          file "/etc/bind/zones/db.lab.local";
+          file "/etc/bind/zones/db.lab.qlab";
       };
 
       zone "30.20.10.in-addr.arpa" {
@@ -177,10 +177,10 @@ write_files:
           file "/etc/bind/zones/db.10.20.30";
       };
 
-  - path: /etc/bind/zones/db.lab.local
+  - path: /etc/bind/zones/db.lab.qlab
     content: |
       $TTL    604800
-      @       IN      SOA     ns1.lab.local. admin.lab.local. (
+      @       IN      SOA     ns1.lab.qlab. admin.lab.qlab. (
                                 2024010101  ; Serial
                                 3600        ; Refresh
                                 1800        ; Retry
@@ -188,7 +188,7 @@ write_files:
                                 86400 )     ; Negative Cache TTL
 
       ; NS records
-      @       IN      NS      ns1.lab.local.
+      @       IN      NS      ns1.lab.qlab.
 
       ; A records
       ns1     IN      A       10.20.30.1
@@ -202,25 +202,25 @@ write_files:
       web     IN      AAAA    2001:db8::10
 
       ; CNAME records
-      www     IN      CNAME   web.lab.local.
-      ftp     IN      CNAME   web.lab.local.
+      www     IN      CNAME   web.lab.qlab.
+      ftp     IN      CNAME   web.lab.qlab.
 
       ; MX records
-      @       IN      MX      10 mail.lab.local.
-      @       IN      MX      20 mail2.lab.local.
+      @       IN      MX      10 mail.lab.qlab.
+      @       IN      MX      20 mail2.lab.qlab.
 
       ; TXT records
       @       IN      TXT     "v=spf1 mx -all"
       _dmarc  IN      TXT     "v=DMARC1; p=reject"
 
       ; SRV records
-      _http._tcp      IN      SRV     10 0 80 web.lab.local.
-      _mysql._tcp     IN      SRV     10 0 3306 db.lab.local.
+      _http._tcp      IN      SRV     10 0 80 web.lab.qlab.
+      _mysql._tcp     IN      SRV     10 0 3306 db.lab.qlab.
 
   - path: /etc/bind/zones/db.10.20.30
     content: |
       $TTL    604800
-      @       IN      SOA     ns1.lab.local. admin.lab.local. (
+      @       IN      SOA     ns1.lab.qlab. admin.lab.qlab. (
                                 2024010101  ; Serial
                                 3600        ; Refresh
                                 1800        ; Retry
@@ -228,14 +228,14 @@ write_files:
                                 86400 )     ; Negative Cache TTL
 
       ; NS records
-      @       IN      NS      ns1.lab.local.
+      @       IN      NS      ns1.lab.qlab.
 
       ; PTR records
-      1       IN      PTR     ns1.lab.local.
-      10      IN      PTR     web.lab.local.
-      20      IN      PTR     mail.lab.local.
-      30      IN      PTR     db.lab.local.
-      40      IN      PTR     app.lab.local.
+      1       IN      PTR     ns1.lab.qlab.
+      10      IN      PTR     web.lab.qlab.
+      20      IN      PTR     mail.lab.qlab.
+      30      IN      PTR     db.lab.qlab.
+      40      IN      PTR     app.lab.qlab.
 
 runcmd:
   - chmod -x /etc/update-motd.d/*
@@ -246,9 +246,9 @@ runcmd:
   - systemctl restart sshd
   - mkdir -p /etc/bind/zones
   - chown bind:bind /etc/bind/zones
-  - chown bind:bind /etc/bind/zones/db.lab.local
+  - chown bind:bind /etc/bind/zones/db.lab.qlab
   - chown bind:bind /etc/bind/zones/db.10.20.30
-  - named-checkzone lab.local /etc/bind/zones/db.lab.local
+  - named-checkzone lab.qlab /etc/bind/zones/db.lab.qlab
   - named-checkzone 30.20.10.in-addr.arpa /etc/bind/zones/db.10.20.30
   - named-checkconf
   - systemctl restart bind9
@@ -281,6 +281,11 @@ users:
     ssh_authorized_keys:
       - "__QLAB_SSH_PUB_KEY__"
 ssh_pwauth: true
+bootcmd:
+  - systemctl stop systemd-resolved || true
+  - systemctl disable systemd-resolved || true
+  - rm -f /etc/resolv.conf
+  - echo "nameserver 8.8.8.8" > /etc/resolv.conf
 package_update: true
 packages:
   - dnsutils
@@ -311,8 +316,8 @@ write_files:
       # Forward all queries to the DNS lab server via host port forwarding
       no-resolv
       server=10.0.2.2#5354
-      # Add lab.local to search domain
-      domain=lab.local
+      # Add lab.qlab to search domain
+      domain=lab.qlab
   - path: /etc/motd.raw
     content: |
       \033[1;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m
@@ -322,7 +327,7 @@ write_files:
         \033[1;33mRole:\033[0m  Query the DNS server to explore record types
 
         \033[1;33mDNS Server:\033[0m  \033[0;32m10.0.2.2\033[0m port \033[0;32m5354\033[0m (via dnsmasq)
-        \033[1;33mResolution:\033[0m  \033[0;32mping web.lab.local\033[0m works natively!
+        \033[1;33mResolution:\033[0m  \033[0;32mping web.lab.qlab\033[0m works natively!
 
         \033[1;33mRecord types to explore:\033[0m
           \033[0;32mA\033[0m       IPv4 address          \033[0;32mAAAA\033[0m    IPv6 address
@@ -332,11 +337,11 @@ write_files:
           \033[0;32mSOA\033[0m     Start of authority
 
         \033[1;33mUseful commands:\033[0m
-          \033[0;32mdig @10.0.2.2 -p 5354 web.lab.local\033[0m
-          \033[0;32mdig @10.0.2.2 -p 5354 lab.local MX\033[0m
+          \033[0;32mdig @10.0.2.2 -p 5354 web.lab.qlab\033[0m
+          \033[0;32mdig @10.0.2.2 -p 5354 lab.qlab MX\033[0m
           \033[0;32mdig @10.0.2.2 -p 5354 -x 10.20.30.10\033[0m
-          \033[0;32mnslookup -port=5354 web.lab.local 10.0.2.2\033[0m
-          \033[0;32mhost -p 5354 web.lab.local 10.0.2.2\033[0m
+          \033[0;32mnslookup -port=5354 web.lab.qlab 10.0.2.2\033[0m
+          \033[0;32mhost -p 5354 web.lab.qlab 10.0.2.2\033[0m
 
         \033[1;33mCredentials:\033[0m  \033[1;36mlabuser\033[0m / \033[1;36mlabpass\033[0m
         \033[1;33mExit:\033[0m         type '\033[1;31mexit\033[0m'
@@ -350,11 +355,9 @@ runcmd:
   - printf '%b\n' "$(cat /etc/motd.raw)" > /etc/motd
   - rm -f /etc/motd.raw
   - systemctl restart sshd
-  - systemctl stop systemd-resolved || true
-  - systemctl disable systemd-resolved || true
   - rm -f /etc/resolv.conf
   - echo "nameserver 127.0.0.1" > /etc/resolv.conf
-  - echo "search lab.local" >> /etc/resolv.conf
+  - echo "search lab.qlab" >> /etc/resolv.conf
   - sed -i 's/^hosts:.*/hosts:          files dns/' /etc/nsswitch.conf
   - systemctl restart dnsmasq
   - systemctl enable dnsmasq
@@ -436,7 +439,7 @@ echo "    SSH:   qlab shell $SERVER_VM"
 echo "    Log:   qlab log $SERVER_VM"
 echo "    Port:  $SERVER_SSH_PORT"
 echo "    DNS:   localhost:$DNS_PORT (UDP+TCP)"
-echo "    Zone:  lab.local (forward) + 30.20.10.in-addr.arpa (reverse)"
+echo "    Zone:  lab.qlab (forward) + 30.20.10.in-addr.arpa (reverse)"
 echo ""
 echo "  DNS Client VM:"
 echo "    SSH:   qlab shell $CLIENT_VM"
@@ -448,8 +451,8 @@ echo "    Username: labuser"
 echo "    Password: labpass"
 echo ""
 echo "  Quick DNS test (from client VM):"
-echo "    dig @10.0.2.2 -p $DNS_PORT web.lab.local"
-echo "    dig @10.0.2.2 -p $DNS_PORT lab.local MX"
+echo "    dig @10.0.2.2 -p $DNS_PORT web.lab.qlab"
+echo "    dig @10.0.2.2 -p $DNS_PORT lab.qlab MX"
 echo "    dig @10.0.2.2 -p $DNS_PORT -x 10.20.30.10"
 echo ""
 echo "  Wait ~90s for boot + package installation."
