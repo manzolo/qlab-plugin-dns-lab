@@ -42,7 +42,7 @@ A [QLab](https://github.com/manzolo/qlab) plugin that creates two virtual machin
 ```
 ┌──────────────────── Host ────────────────────────┐
 │                                                  │
-│  localhost:5354  ── DNS port forwarding (UDP+TCP) │
+│  localhost:5354  ── DNS port forwarding (UDP+TCP)│
 │                                                  │
 │  ┌─────────────────────────┐  ┌────────────────┐ │
 │  │ dns-lab-server          │  │ dns-lab-client │ │
@@ -50,7 +50,7 @@ A [QLab](https://github.com/manzolo/qlab) plugin that creates two virtual machin
 │  │                         │  │                │ │
 │  │  BIND9 (:53)            │  │  dig           │ │
 │  │  Zone: lab.local        │  │  nslookup      │ │
-│  │  Zone: 30.20.10.arpa   │  │  host          │ │
+│  │  Zone: 30.20.10.arpa    │  │  host          │ │
 │  │  named-checkzone        │  │  whois         │ │
 │  └───────────┬─────────────┘  └──────┬─────────┘ │
 │              │     10.0.2.2          │           │
