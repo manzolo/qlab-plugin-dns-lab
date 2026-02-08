@@ -356,6 +356,7 @@ runcmd:
   - rm -f /etc/resolv.conf
   - echo "nameserver 127.0.0.1" > /etc/resolv.conf
   - echo "search lab.local" >> /etc/resolv.conf
+  - sed -i 's/mdns4_minimal \[NOTFOUND=return\]//g' /etc/nsswitch.conf
   - systemctl restart dnsmasq
   - systemctl enable dnsmasq
   - echo "=== dns-lab-client VM is ready! ==="
