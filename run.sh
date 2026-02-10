@@ -42,7 +42,7 @@ LAB_DIR="lab"
 IMAGE_DIR="$WORKSPACE_DIR/images"
 CLOUD_IMAGE_URL=$(get_config CLOUD_IMAGE_URL "https://cloud-images.ubuntu.com/minimal/releases/jammy/release/ubuntu-22.04-minimal-cloudimg-amd64.img")
 CLOUD_IMAGE_FILE="$IMAGE_DIR/ubuntu-22.04-minimal-cloudimg-amd64.img"
-MEMORY=$(get_config DEFAULT_MEMORY 1024)
+MEMORY="${QLAB_MEMORY:-$(get_config DEFAULT_MEMORY 1024)}"
 
 # Ensure directories exist
 mkdir -p "$LAB_DIR" "$IMAGE_DIR"
@@ -407,11 +407,11 @@ echo ""
 
 OVERLAY_SERVER="$LAB_DIR/${SERVER_VM}-disk.qcow2"
 if [[ -f "$OVERLAY_SERVER" ]]; then rm -f "$OVERLAY_SERVER"; fi
-create_overlay "$CLOUD_IMAGE_FILE" "$OVERLAY_SERVER"
+create_overlay "$CLOUD_IMAGE_FILE" "$OVERLAY_SERVER" "${QLAB_DISK_SIZE:-}"
 
 OVERLAY_CLIENT="$LAB_DIR/${CLIENT_VM}-disk.qcow2"
 if [[ -f "$OVERLAY_CLIENT" ]]; then rm -f "$OVERLAY_CLIENT"; fi
-create_overlay "$CLOUD_IMAGE_FILE" "$OVERLAY_CLIENT"
+create_overlay "$CLOUD_IMAGE_FILE" "$OVERLAY_CLIENT" "${QLAB_DISK_SIZE:-}"
 echo ""
 
 # =============================================
@@ -463,4 +463,7 @@ echo ""
 echo "  Stop a single VM:"
 echo "    qlab stop $SERVER_VM"
 echo "    qlab stop $CLIENT_VM"
+echo ""
+echo "  Tip: override resources with environment variables:"
+echo "    QLAB_MEMORY=4096 QLAB_DISK_SIZE=30G qlab run ${PLUGIN_NAME}"
 echo "============================================="
