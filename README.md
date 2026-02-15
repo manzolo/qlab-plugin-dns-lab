@@ -8,8 +8,8 @@ A [QLab](https://github.com/manzolo/qlab) plugin that creates two virtual machin
 
 | VM | SSH Port | Packages | Purpose |
 |----|----------|----------|---------|
-| `dns-lab-server` | 2228 | `bind9`, `bind9-utils`, `dnsutils`, `net-tools` | DNS server running BIND9 with pre-configured zones |
-| `dns-lab-client` | 2229 | `dnsutils`, `curl`, `whois`, `iputils-ping` | DNS client for querying and exploring records |
+| `dns-lab-server` | dynamic | `bind9`, `bind9-utils`, `dnsutils`, `net-tools` | DNS server running BIND9 with pre-configured zones |
+| `dns-lab-client` | dynamic | `dnsutils`, `curl`, `whois`, `iputils-ping` | DNS client for querying and exploring records |
 
 ### Pre-configured DNS Records (lab.qlab)
 
@@ -42,11 +42,11 @@ A [QLab](https://github.com/manzolo/qlab) plugin that creates two virtual machin
 ```
 ┌──────────────────── Host ────────────────────────┐
 │                                                  │
-│  localhost:5354  ── DNS port forwarding (UDP+TCP)│
+│  localhost:<DNS_PORT>  ── DNS port forwarding (UDP+TCP)│
 │                                                  │
 │  ┌─────────────────────────┐  ┌────────────────┐ │
 │  │ dns-lab-server          │  │ dns-lab-client │ │
-│  │  SSH: 2228              │  │  SSH: 2229     │ │
+│  │  SSH: dynamic           │  │  SSH: dynamic  │ │
 │  │                         │  │                │ │
 │  │  BIND9 (:53)            │  │  dig           │ │
 │  │  Zone: lab.qlab        │  │  nslookup      │ │
@@ -56,7 +56,7 @@ A [QLab](https://github.com/manzolo/qlab) plugin that creates two virtual machin
 │              │     10.0.2.2          │           │
 │              └───────────────────────┘           │
 │         client queries server via                │
-│         dig @10.0.2.2 -p 5354                    │
+│         dig @10.0.2.2 -p <DNS_PORT>                    │
 └──────────────────────────────────────────────────┘
 ```
 
@@ -78,25 +78,27 @@ qlab shell dns-lab-client    # connect to client
 
 ---
 
+> **Before starting:** Run `qlab ports` on the host to see the dynamically allocated ports. In the exercises below, replace `<DNS_PORT>` with the actual port shown by `qlab ports` for guest port 53.
+
 ## Exercise 1: Query Basic A and AAAA Records
 
 **On the client VM:**
 
 ```bash
 # Query the A record for web.lab.qlab
-dig @10.0.2.2 -p 5354 web.lab.qlab
+dig @10.0.2.2 -p <DNS_PORT> web.lab.qlab
 
 # Query with short output
-dig @10.0.2.2 -p 5354 web.lab.qlab +short
+dig @10.0.2.2 -p <DNS_PORT> web.lab.qlab +short
 
 # Query all A records
-dig @10.0.2.2 -p 5354 ns1.lab.qlab +short
-dig @10.0.2.2 -p 5354 mail.lab.qlab +short
-dig @10.0.2.2 -p 5354 db.lab.qlab +short
-dig @10.0.2.2 -p 5354 app.lab.qlab +short
+dig @10.0.2.2 -p <DNS_PORT> ns1.lab.qlab +short
+dig @10.0.2.2 -p <DNS_PORT> mail.lab.qlab +short
+dig @10.0.2.2 -p <DNS_PORT> db.lab.qlab +short
+dig @10.0.2.2 -p <DNS_PORT> app.lab.qlab +short
 
 # Query the AAAA (IPv6) record
-dig @10.0.2.2 -p 5354 web.lab.qlab AAAA
+dig @10.0.2.2 -p <DNS_PORT> web.lab.qlab AAAA
 ```
 
 **Expected results:**
@@ -111,16 +113,16 @@ dig @10.0.2.2 -p 5354 web.lab.qlab AAAA
 
 ```bash
 # Query a CNAME record
-dig @10.0.2.2 -p 5354 www.lab.qlab
+dig @10.0.2.2 -p <DNS_PORT> www.lab.qlab
 
 # Notice: the response includes both the CNAME and the resolved A record
-dig @10.0.2.2 -p 5354 www.lab.qlab +short
+dig @10.0.2.2 -p <DNS_PORT> www.lab.qlab +short
 
 # Try another alias
-dig @10.0.2.2 -p 5354 ftp.lab.qlab
+dig @10.0.2.2 -p <DNS_PORT> ftp.lab.qlab
 
 # Query specifically for CNAME type
-dig @10.0.2.2 -p 5354 www.lab.qlab CNAME
+dig @10.0.2.2 -p <DNS_PORT> www.lab.qlab CNAME
 ```
 
 **Lesson:** CNAME records create aliases. When you query `www.lab.qlab`, DNS first resolves the CNAME to `web.lab.qlab`, then returns its A record.
@@ -133,16 +135,16 @@ dig @10.0.2.2 -p 5354 www.lab.qlab CNAME
 
 ```bash
 # Query MX records for the domain
-dig @10.0.2.2 -p 5354 lab.qlab MX
+dig @10.0.2.2 -p <DNS_PORT> lab.qlab MX
 
 # Observe the priority values (lower = higher priority)
 # mail.lab.qlab has priority 10 (primary)
 # mail2.lab.qlab has priority 20 (backup)
-dig @10.0.2.2 -p 5354 lab.qlab MX +short
+dig @10.0.2.2 -p <DNS_PORT> lab.qlab MX +short
 
 # Verify the mail servers have A records
-dig @10.0.2.2 -p 5354 mail.lab.qlab +short
-dig @10.0.2.2 -p 5354 mail2.lab.qlab +short
+dig @10.0.2.2 -p <DNS_PORT> mail.lab.qlab +short
+dig @10.0.2.2 -p <DNS_PORT> mail2.lab.qlab +short
 ```
 
 **Lesson:** MX records direct email. Lower priority numbers indicate preferred servers. If `mail.lab.qlab` (priority 10) is down, email is routed to `mail2.lab.qlab` (priority 20).
@@ -155,16 +157,16 @@ dig @10.0.2.2 -p 5354 mail2.lab.qlab +short
 
 ```bash
 # Reverse lookup: IP → hostname
-dig @10.0.2.2 -p 5354 -x 10.20.30.10
+dig @10.0.2.2 -p <DNS_PORT> -x 10.20.30.10
 
 # Short output
-dig @10.0.2.2 -p 5354 -x 10.20.30.10 +short
+dig @10.0.2.2 -p <DNS_PORT> -x 10.20.30.10 +short
 
 # Try all reverse lookups
-dig @10.0.2.2 -p 5354 -x 10.20.30.1 +short     # ns1
-dig @10.0.2.2 -p 5354 -x 10.20.30.20 +short    # mail
-dig @10.0.2.2 -p 5354 -x 10.20.30.30 +short    # db
-dig @10.0.2.2 -p 5354 -x 10.20.30.40 +short    # app
+dig @10.0.2.2 -p <DNS_PORT> -x 10.20.30.1 +short     # ns1
+dig @10.0.2.2 -p <DNS_PORT> -x 10.20.30.20 +short    # mail
+dig @10.0.2.2 -p <DNS_PORT> -x 10.20.30.30 +short    # db
+dig @10.0.2.2 -p <DNS_PORT> -x 10.20.30.40 +short    # app
 ```
 
 **Lesson:** PTR records map IP addresses back to hostnames. They are stored in a separate reverse zone (`30.20.10.in-addr.arpa`).
@@ -177,14 +179,14 @@ dig @10.0.2.2 -p 5354 -x 10.20.30.40 +short    # app
 
 ```bash
 # Query TXT records for the domain
-dig @10.0.2.2 -p 5354 lab.qlab TXT
+dig @10.0.2.2 -p <DNS_PORT> lab.qlab TXT
 
 # Query the DMARC record
-dig @10.0.2.2 -p 5354 _dmarc.lab.qlab TXT
+dig @10.0.2.2 -p <DNS_PORT> _dmarc.lab.qlab TXT
 
 # Short output
-dig @10.0.2.2 -p 5354 lab.qlab TXT +short
-dig @10.0.2.2 -p 5354 _dmarc.lab.qlab TXT +short
+dig @10.0.2.2 -p <DNS_PORT> lab.qlab TXT +short
+dig @10.0.2.2 -p <DNS_PORT> _dmarc.lab.qlab TXT +short
 ```
 
 **Lesson:** TXT records store arbitrary text. Common uses include SPF (which servers can send email for a domain) and DMARC (email authentication policy). These are critical for email security and deliverability.
@@ -197,8 +199,8 @@ dig @10.0.2.2 -p 5354 _dmarc.lab.qlab TXT +short
 
 ```bash
 # Query SRV records
-dig @10.0.2.2 -p 5354 _http._tcp.lab.qlab SRV
-dig @10.0.2.2 -p 5354 _mysql._tcp.lab.qlab SRV
+dig @10.0.2.2 -p <DNS_PORT> _http._tcp.lab.qlab SRV
+dig @10.0.2.2 -p <DNS_PORT> _mysql._tcp.lab.qlab SRV
 
 # SRV format: priority weight port target
 # 10 0 80 web.lab.qlab.  → HTTP on web:80
@@ -215,13 +217,13 @@ dig @10.0.2.2 -p 5354 _mysql._tcp.lab.qlab SRV
 
 ```bash
 # Query the SOA record
-dig @10.0.2.2 -p 5354 lab.qlab SOA
+dig @10.0.2.2 -p <DNS_PORT> lab.qlab SOA
 
 # Query NS records
-dig @10.0.2.2 -p 5354 lab.qlab NS
+dig @10.0.2.2 -p <DNS_PORT> lab.qlab NS
 
 # Query ANY to see all records for the domain
-dig @10.0.2.2 -p 5354 lab.qlab ANY
+dig @10.0.2.2 -p <DNS_PORT> lab.qlab ANY
 ```
 
 **Lesson:** The SOA record defines the authoritative information about a zone: the primary nameserver, admin email, serial number, and timing parameters. NS records declare which servers are authoritative for the zone.
@@ -257,7 +259,7 @@ sudo rndc reload
 
 ```bash
 # Verify the new record
-dig @10.0.2.2 -p 5354 api.lab.qlab +short
+dig @10.0.2.2 -p <DNS_PORT> api.lab.qlab +short
 # Should return: 10.20.30.50
 ```
 
@@ -271,15 +273,15 @@ dig @10.0.2.2 -p 5354 api.lab.qlab +short
 
 ```bash
 # nslookup — interactive-style queries
-nslookup -port=5354 web.lab.qlab 10.0.2.2
-nslookup -port=5354 -type=MX lab.qlab 10.0.2.2
-nslookup -port=5354 -type=TXT lab.qlab 10.0.2.2
+nslookup -port=<DNS_PORT> web.lab.qlab 10.0.2.2
+nslookup -port=<DNS_PORT> -type=MX lab.qlab 10.0.2.2
+nslookup -port=<DNS_PORT> -type=TXT lab.qlab 10.0.2.2
 
 # host — simpler output format
-host -p 5354 web.lab.qlab 10.0.2.2
-host -p 5354 -t MX lab.qlab 10.0.2.2
-host -p 5354 -t TXT lab.qlab 10.0.2.2
-host -p 5354 10.20.30.10 10.0.2.2    # reverse lookup
+host -p <DNS_PORT> web.lab.qlab 10.0.2.2
+host -p <DNS_PORT> -t MX lab.qlab 10.0.2.2
+host -p <DNS_PORT> -t TXT lab.qlab 10.0.2.2
+host -p <DNS_PORT> 10.20.30.10 10.0.2.2    # reverse lookup
 ```
 
 **Lesson:** `dig` gives the most detailed output, `nslookup` is widely available across platforms, and `host` provides the simplest human-readable format.
@@ -292,21 +294,21 @@ host -p 5354 10.20.30.10 10.0.2.2    # reverse lookup
 
 ```bash
 # Trace the full resolution path
-dig @10.0.2.2 -p 5354 web.lab.qlab +trace
+dig @10.0.2.2 -p <DNS_PORT> web.lab.qlab +trace
 
 # Short output (just the answer)
-dig @10.0.2.2 -p 5354 web.lab.qlab +short
+dig @10.0.2.2 -p <DNS_PORT> web.lab.qlab +short
 
 # Show only the answer section
-dig @10.0.2.2 -p 5354 web.lab.qlab +noall +answer
+dig @10.0.2.2 -p <DNS_PORT> web.lab.qlab +noall +answer
 
 # Query with specific options
-dig @10.0.2.2 -p 5354 web.lab.qlab +norecurse    # non-recursive query
-dig @10.0.2.2 -p 5354 web.lab.qlab +tcp           # force TCP instead of UDP
-dig @10.0.2.2 -p 5354 web.lab.qlab +stats         # show query statistics
+dig @10.0.2.2 -p <DNS_PORT> web.lab.qlab +norecurse    # non-recursive query
+dig @10.0.2.2 -p <DNS_PORT> web.lab.qlab +tcp           # force TCP instead of UDP
+dig @10.0.2.2 -p <DNS_PORT> web.lab.qlab +stats         # show query statistics
 
 # Check zone transfer (AXFR)
-dig @10.0.2.2 -p 5354 lab.qlab AXFR
+dig @10.0.2.2 -p <DNS_PORT> lab.qlab AXFR
 ```
 
 **Lesson:** `dig` has many options for controlling output and query behavior. `+trace` shows the full delegation chain, `+short` is great for scripting, and `+tcp` forces TCP for large responses.
