@@ -6,9 +6,6 @@ set -euo pipefail
 PLUGIN_NAME="dns-lab"
 SERVER_VM="dns-lab-server"
 CLIENT_VM="dns-lab-client"
-SERVER_SSH_PORT=2228
-CLIENT_SSH_PORT=2229
-DNS_PORT=5354
 
 echo "============================================="
 echo "  dns-lab: DNS & BIND9 Lab"
@@ -16,13 +13,13 @@ echo "============================================="
 echo ""
 echo "  This lab creates two VMs:"
 echo ""
-echo "    1. $SERVER_VM  (SSH port $SERVER_SSH_PORT)"
+echo "    1. $SERVER_VM"
 echo "       Runs BIND9 with forward zone (lab.qlab) and reverse zone"
 echo "       Record types: A, AAAA, CNAME, MX, PTR, NS, TXT, SRV, SOA"
 echo ""
-echo "    2. $CLIENT_VM  (SSH port $CLIENT_SSH_PORT)"
+echo "    2. $CLIENT_VM"
 echo "       Equipped with dig, nslookup, host, whois"
-echo "       Query the DNS server at 10.0.2.2:$DNS_PORT"
+echo "       Query the DNS server (port shown after boot via 'qlab ports')"
 echo ""
 
 # Source QLab core libraries
@@ -420,14 +417,25 @@ echo ""
 info "Step 5: Starting VMs"
 echo ""
 
-info "Starting $SERVER_VM (SSH port $SERVER_SSH_PORT, DNS port $DNS_PORT)..."
-start_vm "$OVERLAY_SERVER" "$CIDATA_SERVER" "$MEMORY" "$SERVER_VM" "$SERVER_SSH_PORT" \
-    "hostfwd=udp::${DNS_PORT}-:53" \
-    "hostfwd=tcp::${DNS_PORT}-:53"
+# Multi-VM: resource check, cleanup trap, rollback on failure
+MEMORY_TOTAL=$(( MEMORY * 2 ))
+check_host_resources "$MEMORY_TOTAL" 2
+declare -a STARTED_VMS=()
+register_vm_cleanup STARTED_VMS
+
+info "Starting $SERVER_VM..."
+start_vm_or_fail STARTED_VMS "$OVERLAY_SERVER" "$CIDATA_SERVER" "$MEMORY" "$SERVER_VM" auto \
+    "hostfwd=udp::0-:53" \
+    "hostfwd=tcp::0-:53" || exit 1
+SERVER_SSH_PORT="$LAST_SSH_PORT"
 echo ""
 
-info "Starting $CLIENT_VM (SSH port $CLIENT_SSH_PORT)..."
-start_vm "$OVERLAY_CLIENT" "$CIDATA_CLIENT" "$MEMORY" "$CLIENT_VM" "$CLIENT_SSH_PORT"
+info "Starting $CLIENT_VM..."
+start_vm_or_fail STARTED_VMS "$OVERLAY_CLIENT" "$CIDATA_CLIENT" "$MEMORY" "$CLIENT_VM" auto || exit 1
+CLIENT_SSH_PORT="$LAST_SSH_PORT"
+
+# Successful start — disable cleanup trap
+trap - EXIT
 
 echo ""
 echo "============================================="
@@ -437,23 +445,20 @@ echo ""
 echo "  DNS Server VM:"
 echo "    SSH:   qlab shell $SERVER_VM"
 echo "    Log:   qlab log $SERVER_VM"
-echo "    Port:  $SERVER_SSH_PORT"
-echo "    DNS:   localhost:$DNS_PORT (UDP+TCP)"
+echo "    DNS:   check port with 'qlab ports'"
 echo "    Zone:  lab.qlab (forward) + 30.20.10.in-addr.arpa (reverse)"
 echo ""
 echo "  DNS Client VM:"
 echo "    SSH:   qlab shell $CLIENT_VM"
 echo "    Log:   qlab log $CLIENT_VM"
-echo "    Port:  $CLIENT_SSH_PORT"
 echo ""
 echo "  Credentials (both VMs):"
 echo "    Username: labuser"
 echo "    Password: labpass"
 echo ""
 echo "  Quick DNS test (from client VM):"
-echo "    dig @10.0.2.2 -p $DNS_PORT web.lab.qlab"
-echo "    dig @10.0.2.2 -p $DNS_PORT lab.qlab MX"
-echo "    dig @10.0.2.2 -p $DNS_PORT -x 10.20.30.10"
+echo "    Check the DNS port with 'qlab ports', then:"
+echo "    dig @10.0.2.2 -p <dns_port> web.lab.qlab"
 echo ""
 echo "  Wait ~90s for boot + package installation."
 echo ""
