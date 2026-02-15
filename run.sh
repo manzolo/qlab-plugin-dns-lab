@@ -428,6 +428,13 @@ start_vm_or_fail STARTED_VMS "$OVERLAY_SERVER" "$CIDATA_SERVER" "$MEMORY" "$SERV
     "hostfwd=udp::0-:53" \
     "hostfwd=tcp::0-:53" || exit 1
 SERVER_SSH_PORT="$LAST_SSH_PORT"
+
+# Read the dynamically allocated DNS port from .ports file
+DNS_PORT=""
+if [[ -f "$STATE_DIR/${SERVER_VM}.ports" ]]; then
+    DNS_PORT=$(grep ':53$' "$STATE_DIR/${SERVER_VM}.ports" | head -1 | cut -d: -f2)
+fi
+
 echo ""
 
 info "Starting $CLIENT_VM..."
@@ -445,7 +452,11 @@ echo ""
 echo "  DNS Server VM:"
 echo "    SSH:   qlab shell $SERVER_VM"
 echo "    Log:   qlab log $SERVER_VM"
+if [[ -n "$DNS_PORT" ]]; then
+echo "    DNS:   localhost:${DNS_PORT} (TCP/UDP)"
+else
 echo "    DNS:   check port with 'qlab ports'"
+fi
 echo "    Zone:  lab.qlab (forward) + 30.20.10.in-addr.arpa (reverse)"
 echo ""
 echo "  DNS Client VM:"
@@ -457,8 +468,12 @@ echo "    Username: labuser"
 echo "    Password: labpass"
 echo ""
 echo "  Quick DNS test (from client VM):"
+if [[ -n "$DNS_PORT" ]]; then
+echo "    dig @10.0.2.2 -p ${DNS_PORT} web.lab.qlab"
+else
 echo "    Check the DNS port with 'qlab ports', then:"
 echo "    dig @10.0.2.2 -p <dns_port> web.lab.qlab"
+fi
 echo ""
 echo "  Wait ~90s for boot + package installation."
 echo ""
