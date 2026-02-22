@@ -78,242 +78,29 @@ qlab shell dns-lab-client    # connect to client
 
 ---
 
-> **Before starting:** Run `qlab ports` on the host to see the dynamically allocated ports. In the exercises below, replace `<DNS_PORT>` with the actual port shown by `qlab ports` for guest port 53.
+## Exercises
 
-## Exercise 1: Query Basic A and AAAA Records
+> **New to DNS?** See the [Step-by-Step Guide](guide.md) for complete walkthroughs with full examples and expected output.
 
-**On the client VM:**
+| # | Exercise | What you'll do |
+|---|----------|----------------|
+| 1 | **DNS Anatomy** | Explore BIND9 installation, zone files, and configuration |
+| 2 | **Querying DNS Records** | Use `dig` to query A, AAAA, CNAME, MX, TXT, SRV, PTR records |
+| 3 | **Forward Zone Management** | Add new records, increment serial, reload zones |
+| 4 | **Reverse DNS** | Query and manage PTR records for reverse lookups |
+| 5 | **DNS Resolution Chain** | Trace queries and understand DNS delegation |
+| 6 | **Troubleshooting** | Diagnose common DNS issues with dig, nslookup, host |
 
-```bash
-# Query the A record for web.lab.qlab
-dig @10.0.2.2 -p <DNS_PORT> web.lab.qlab
+## Automated Tests
 
-# Query with short output
-dig @10.0.2.2 -p <DNS_PORT> web.lab.qlab +short
-
-# Query all A records
-dig @10.0.2.2 -p <DNS_PORT> ns1.lab.qlab +short
-dig @10.0.2.2 -p <DNS_PORT> mail.lab.qlab +short
-dig @10.0.2.2 -p <DNS_PORT> db.lab.qlab +short
-dig @10.0.2.2 -p <DNS_PORT> app.lab.qlab +short
-
-# Query the AAAA (IPv6) record
-dig @10.0.2.2 -p <DNS_PORT> web.lab.qlab AAAA
-```
-
-**Expected results:**
-- `web.lab.qlab` → `10.20.30.10`
-- `web.lab.qlab AAAA` → `2001:db8::10`
-
----
-
-## Exercise 2: Explore CNAME Aliases
-
-**On the client VM:**
+An automated test suite validates the exercises against running VMs:
 
 ```bash
-# Query a CNAME record
-dig @10.0.2.2 -p <DNS_PORT> www.lab.qlab
-
-# Notice: the response includes both the CNAME and the resolved A record
-dig @10.0.2.2 -p <DNS_PORT> www.lab.qlab +short
-
-# Try another alias
-dig @10.0.2.2 -p <DNS_PORT> ftp.lab.qlab
-
-# Query specifically for CNAME type
-dig @10.0.2.2 -p <DNS_PORT> www.lab.qlab CNAME
+# Start the lab first
+qlab run dns-lab
+# Wait ~90s for cloud-init, then run all tests
+qlab test dns-lab
 ```
-
-**Lesson:** CNAME records create aliases. When you query `www.lab.qlab`, DNS first resolves the CNAME to `web.lab.qlab`, then returns its A record.
-
----
-
-## Exercise 3: Query MX Records (Mail Routing)
-
-**On the client VM:**
-
-```bash
-# Query MX records for the domain
-dig @10.0.2.2 -p <DNS_PORT> lab.qlab MX
-
-# Observe the priority values (lower = higher priority)
-# mail.lab.qlab has priority 10 (primary)
-# mail2.lab.qlab has priority 20 (backup)
-dig @10.0.2.2 -p <DNS_PORT> lab.qlab MX +short
-
-# Verify the mail servers have A records
-dig @10.0.2.2 -p <DNS_PORT> mail.lab.qlab +short
-dig @10.0.2.2 -p <DNS_PORT> mail2.lab.qlab +short
-```
-
-**Lesson:** MX records direct email. Lower priority numbers indicate preferred servers. If `mail.lab.qlab` (priority 10) is down, email is routed to `mail2.lab.qlab` (priority 20).
-
----
-
-## Exercise 4: Reverse DNS with PTR Records
-
-**On the client VM:**
-
-```bash
-# Reverse lookup: IP → hostname
-dig @10.0.2.2 -p <DNS_PORT> -x 10.20.30.10
-
-# Short output
-dig @10.0.2.2 -p <DNS_PORT> -x 10.20.30.10 +short
-
-# Try all reverse lookups
-dig @10.0.2.2 -p <DNS_PORT> -x 10.20.30.1 +short     # ns1
-dig @10.0.2.2 -p <DNS_PORT> -x 10.20.30.20 +short    # mail
-dig @10.0.2.2 -p <DNS_PORT> -x 10.20.30.30 +short    # db
-dig @10.0.2.2 -p <DNS_PORT> -x 10.20.30.40 +short    # app
-```
-
-**Lesson:** PTR records map IP addresses back to hostnames. They are stored in a separate reverse zone (`30.20.10.in-addr.arpa`).
-
----
-
-## Exercise 5: TXT Records (SPF and DMARC)
-
-**On the client VM:**
-
-```bash
-# Query TXT records for the domain
-dig @10.0.2.2 -p <DNS_PORT> lab.qlab TXT
-
-# Query the DMARC record
-dig @10.0.2.2 -p <DNS_PORT> _dmarc.lab.qlab TXT
-
-# Short output
-dig @10.0.2.2 -p <DNS_PORT> lab.qlab TXT +short
-dig @10.0.2.2 -p <DNS_PORT> _dmarc.lab.qlab TXT +short
-```
-
-**Lesson:** TXT records store arbitrary text. Common uses include SPF (which servers can send email for a domain) and DMARC (email authentication policy). These are critical for email security and deliverability.
-
----
-
-## Exercise 6: SRV Records (Service Discovery)
-
-**On the client VM:**
-
-```bash
-# Query SRV records
-dig @10.0.2.2 -p <DNS_PORT> _http._tcp.lab.qlab SRV
-dig @10.0.2.2 -p <DNS_PORT> _mysql._tcp.lab.qlab SRV
-
-# SRV format: priority weight port target
-# 10 0 80 web.lab.qlab.  → HTTP on web:80
-# 10 0 3306 db.lab.qlab.  → MySQL on db:3306
-```
-
-**Lesson:** SRV records advertise services, including the port and host. They follow the naming convention `_service._proto.domain`. This is how clients can discover services without hardcoding ports.
-
----
-
-## Exercise 7: SOA and NS Records (Zone Authority)
-
-**On the client VM:**
-
-```bash
-# Query the SOA record
-dig @10.0.2.2 -p <DNS_PORT> lab.qlab SOA
-
-# Query NS records
-dig @10.0.2.2 -p <DNS_PORT> lab.qlab NS
-
-# Query ANY to see all records for the domain
-dig @10.0.2.2 -p <DNS_PORT> lab.qlab ANY
-```
-
-**Lesson:** The SOA record defines the authoritative information about a zone: the primary nameserver, admin email, serial number, and timing parameters. NS records declare which servers are authoritative for the zone.
-
----
-
-## Exercise 8: Add a New DNS Record
-
-**On the server VM:**
-
-```bash
-# View the current zone file
-cat /etc/bind/zones/db.lab.qlab
-
-# Add a new A record for "api.lab.qlab"
-sudo bash -c 'cat >> /etc/bind/zones/db.lab.qlab << EOF
-
-; Added by student
-api     IN      A       10.20.30.50
-EOF'
-
-# IMPORTANT: Increment the serial number
-sudo sed -i 's/2024010101/2024010102/' /etc/bind/zones/db.lab.qlab
-
-# Validate the zone file
-sudo named-checkzone lab.qlab /etc/bind/zones/db.lab.qlab
-
-# Reload BIND9
-sudo rndc reload
-```
-
-**On the client VM:**
-
-```bash
-# Verify the new record
-dig @10.0.2.2 -p <DNS_PORT> api.lab.qlab +short
-# Should return: 10.20.30.50
-```
-
-**Lesson:** When modifying zone files, always increment the serial number and validate with `named-checkzone` before reloading.
-
----
-
-## Exercise 9: Alternative Query Tools (nslookup and host)
-
-**On the client VM:**
-
-```bash
-# nslookup — interactive-style queries
-nslookup -port=<DNS_PORT> web.lab.qlab 10.0.2.2
-nslookup -port=<DNS_PORT> -type=MX lab.qlab 10.0.2.2
-nslookup -port=<DNS_PORT> -type=TXT lab.qlab 10.0.2.2
-
-# host — simpler output format
-host -p <DNS_PORT> web.lab.qlab 10.0.2.2
-host -p <DNS_PORT> -t MX lab.qlab 10.0.2.2
-host -p <DNS_PORT> -t TXT lab.qlab 10.0.2.2
-host -p <DNS_PORT> 10.20.30.10 10.0.2.2    # reverse lookup
-```
-
-**Lesson:** `dig` gives the most detailed output, `nslookup` is widely available across platforms, and `host` provides the simplest human-readable format.
-
----
-
-## Exercise 10: Query Tracing and Advanced dig Options
-
-**On the client VM:**
-
-```bash
-# Trace the full resolution path
-dig @10.0.2.2 -p <DNS_PORT> web.lab.qlab +trace
-
-# Short output (just the answer)
-dig @10.0.2.2 -p <DNS_PORT> web.lab.qlab +short
-
-# Show only the answer section
-dig @10.0.2.2 -p <DNS_PORT> web.lab.qlab +noall +answer
-
-# Query with specific options
-dig @10.0.2.2 -p <DNS_PORT> web.lab.qlab +norecurse    # non-recursive query
-dig @10.0.2.2 -p <DNS_PORT> web.lab.qlab +tcp           # force TCP instead of UDP
-dig @10.0.2.2 -p <DNS_PORT> web.lab.qlab +stats         # show query statistics
-
-# Check zone transfer (AXFR)
-dig @10.0.2.2 -p <DNS_PORT> lab.qlab AXFR
-```
-
-**Lesson:** `dig` has many options for controlling output and query behavior. `+trace` shows the full delegation chain, `+short` is great for scripting, and `+tcp` forces TCP for large responses.
-
----
 
 ## Managing VMs
 
