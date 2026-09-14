@@ -1,0 +1,93 @@
+[INFO] Running tests for plugin 'dns-lab'...
+
+
+=========================================
+  dns-lab — Automated Test Suite
+=========================================
+
+  [INFO] Server port: 2225
+  [INFO] Client port: 2233
+  [PASS] Server VM reachable
+  [PASS] Client VM reachable
+  [PASS] Server cloud-init done
+  [PASS] Client cloud-init done
+
+Exercise 1 — DNS Anatomy
+
+  [PASS] BIND9 is active
+  [PASS] BIND config exists
+  [PASS] Forward zone file exists
+  [PASS] dig is installed on client
+  [PASS] nslookup is installed on client
+
+  Exercise 1: All 5 checks passed
+
+Exercise 2 — Querying DNS Records
+
+  [PASS] A record resolves
+  [PASS] AAAA record resolves
+  [PASS] CNAME record resolves
+  [PASS] MX record resolves
+  [PASS] TXT record resolves
+  [PASS] NS record resolves
+
+  Exercise 2: All 6 checks passed
+
+Exercise 3 — Forward Zone Management
+
+  [PASS] Zone validates after adding record
+  [PASS] New record resolves
+
+  Exercise 3: All 2 checks passed
+
+Exercise 4 — Reverse DNS
+
+  [PASS] Reverse lookup for 10.20.30.10
+  [PASS] Reverse zone file exists
+
+  Exercise 4: All 2 checks passed
+
+Exercise 5 — DNS Resolution Chain
+
+  [PASS] Local domain resolves via server
+  [PASS] Mail record resolves
+  [PASS] Non-recursive query returns answer
+
+  Exercise 5: All 3 checks passed
+
+Exercise 6 — Troubleshooting
+
+  [PASS] named-checkconf passes
+  [PASS] named-checkzone passes
+  [PASS] DNS logs are accessible
+
+  Exercise 6: All 3 checks passed
+
+Exercise 7 — Resolution across the lab LAN
+
+  [PASS] Server holds 10.20.30.1 on the lab LAN
+  [PASS] Client holds 10.20.30.50 on the lab LAN
+  [PASS] Client can reach the server
+  [PASS] Server answers queries arriving over the LAN
+  [PASS] ns1.lab.qlab resolves to the server's real address
+  [PASS] ns1.lab.qlab answers ping from the client
+  [PASS] Client resolves with no @server (its own resolv.conf path)
+  [PASS] Plain 'dig www' does NOT apply the search domain
+  [PASS] 'dig +search www' resolves through the search domain
+  [PASS] 'host www' applies the search domain on its own
+  [PASS] Reverse lookup works from the client
+  [PASS] Server's resolv.conf does not point at the dead systemd-resolved stub
+  [PASS] A bare 'dig name' works on the server too
+
+  Exercise 7: All 13 checks passed
+
+=========================================
+  Final Report
+=========================================
+
+  Exercises run:     7
+  Exercises passed:  7
+  Exercises failed:  0
+  Exercises skipped: 0
+
+  All exercises passed!

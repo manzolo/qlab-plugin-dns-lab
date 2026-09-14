@@ -1,0 +1,9 @@
+zone "lab.qlab" {
+    type master;
+    file "/etc/bind/zones/db.lab.qlab";
+};
+
+zone "30.20.10.in-addr.arpa" {
+    type master;
+    file "/etc/bind/zones/db.10.20.30";
+};

@@ -1,0 +1,23 @@
+$TTL    604800
+@       IN      SOA     ns1.lab.qlab. admin.lab.qlab. (
+                          2024010101  ; Serial
+                          3600        ; Refresh
+                          1800        ; Retry
+                          604800      ; Expire
+                          86400 )     ; Negative Cache TTL
+@       IN      NS      ns1.lab.qlab.
+ns1     IN      A       10.20.30.1
+web     IN      A       10.20.30.10
+mail    IN      A       10.20.30.20
+db      IN      A       10.20.30.30
+app     IN      A       10.20.30.40
+mail2   IN      A       10.20.30.21
+web     IN      AAAA    2001:db8::10
+www     IN      CNAME   web.lab.qlab.
+ftp     IN      CNAME   web.lab.qlab.
+@       IN      MX      10 mail.lab.qlab.
+@       IN      MX      20 mail2.lab.qlab.
+@       IN      TXT     "v=spf1 mx -all"
+_dmarc  IN      TXT     "v=DMARC1; p=reject"
+_http._tcp      IN      SRV     10 0 80 web.lab.qlab.
+_mysql._tcp     IN      SRV     10 0 3306 db.lab.qlab.

@@ -37,6 +37,22 @@ A [QLab](https://github.com/manzolo/qlab) plugin that creates two virtual machin
 | PTR | `30.30.20.10.in-addr.arpa.` | `db.lab.qlab.` | Reverse DNS |
 | PTR | `40.30.20.10.in-addr.arpa.` | `app.lab.qlab.` | Reverse DNS |
 
+## Walkthrough
+
+`docs/` holds an illustrated account of a real run — every block of output in it
+was captured while the lab was running, not written by hand.
+
+| English | Italiano |
+|---|---|
+| [`docs/walkthrough-en.pdf`](docs/walkthrough-en.pdf) | [`docs/walkthrough-it.pdf`](docs/walkthrough-it.pdf) |
+
+```bash
+# from the qlab checkout
+python3 tools/walkthrough/build.py ../qlab-plugin-dns-lab        # English
+python3 tools/walkthrough/build.py ../qlab-plugin-dns-lab -it    # Italian
+python3 tools/walkthrough/build.py ../qlab-plugin-dns-lab --live # re-capture first
+```
+
 ## Architecture
 
 ```

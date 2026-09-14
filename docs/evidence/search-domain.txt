@@ -1,0 +1,9 @@
+$ dig www +short
+(empty: dig ignores the search list)
+$ dig +search www +short
+web.lab.qlab.
+10.20.30.10
+$ host www
+www.lab.qlab is an alias for web.lab.qlab.
+web.lab.qlab has address 10.20.30.10
+web.lab.qlab has IPv6 address 2001:db8::10

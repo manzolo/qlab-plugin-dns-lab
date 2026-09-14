@@ -7,6 +7,17 @@ PLUGIN_NAME="dns-lab"
 SERVER_VM="dns-lab-server"
 CLIENT_VM="dns-lab-client"
 
+# Internal LAN — a direct VM-to-VM link via a QEMU multicast socket.
+# The subnet is the one the zone file already claims: ns1.lab.qlab is
+# 10.20.30.1, so the server really is the address its own zone advertises.
+# localaddr pins the socket to loopback; without it multicast leaves the host
+# by the default route, which is the real network.
+INTERNAL_MCAST="230.0.0.1:10500"
+SERVER_LAN_IP="10.20.30.1"
+CLIENT_LAN_IP="10.20.30.50"
+SERVER_LAN_MAC="52:54:00:00:0e:01"
+CLIENT_LAN_MAC="52:54:00:00:0e:02"
+
 echo "============================================="
 echo "  dns-lab: DNS & BIND9 Lab"
 echo "============================================="
@@ -19,7 +30,7 @@ echo "       Record types: A, AAAA, CNAME, MX, PTR, NS, TXT, SRV, SOA"
 echo ""
 echo "    2. $CLIENT_VM"
 echo "       Equipped with dig, nslookup, host, whois"
-echo "       Query the DNS server (port shown after boot via 'qlab ports')"
+echo "       Resolves through the server over the lab LAN ($SERVER_LAN_IP)"
 echo ""
 
 # Source QLab core libraries
@@ -81,6 +92,7 @@ info "Creating cloud-init for $SERVER_VM..."
 cat > "$LAB_DIR/user-data-server" <<'USERDATA'
 #cloud-config
 hostname: dns-lab-server
+manage_etc_hosts: true
 users:
   - name: labuser
     plain_text_passwd: labpass
@@ -94,6 +106,7 @@ package_update: true
 packages:
   - bind9
   - bind9-utils
+  - tcpdump
   - dnsutils
   - net-tools
   - zsh
@@ -150,6 +163,18 @@ write_files:
         \033[1;33mExit:\033[0m         type '\033[1;31mexit\033[0m'
 
       \033[1;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m
+
+  - path: /etc/netplan/60-internal.yaml
+    permissions: '0600'
+    content: |
+      network:
+        version: 2
+        ethernets:
+          dnslan:
+            match:
+              macaddress: "__SERVER_LAN_MAC__"
+            addresses:
+              - __SERVER_LAN_IP__/24
 
   - path: /etc/bind/named.conf.options
     content: |
@@ -252,6 +277,14 @@ runcmd:
   - printf '%b\n' "$(cat /etc/motd.raw)" > /etc/motd
   - rm -f /etc/motd.raw
   - systemctl restart sshd
+  - netplan apply
+  # BIND is the resolver on this machine. systemd-resolved must go, or
+  # /etc/resolv.conf keeps pointing at a stub listener that is no longer
+  # there and every bare `dig name` fails while `dig @127.0.0.1 name` works.
+  - systemctl stop systemd-resolved || true
+  - systemctl disable systemd-resolved || true
+  - rm -f /etc/resolv.conf
+  - printf 'nameserver 127.0.0.1\nsearch lab.qlab\n' > /etc/resolv.conf
   - mkdir -p /etc/bind/zones
   - chown bind:bind /etc/bind/zones
   - chown bind:bind /etc/bind/zones/db.lab.qlab
@@ -267,7 +300,11 @@ runcmd:
 USERDATA
 
 # Inject the SSH public key into user-data
-sed -i "s|__QLAB_SSH_PUB_KEY__|${QLAB_SSH_PUB_KEY:-}|g" "$LAB_DIR/user-data-server"
+sed -i \
+    -e "s|__QLAB_SSH_PUB_KEY__|${QLAB_SSH_PUB_KEY:-}|g" \
+    -e "s|__SERVER_LAN_MAC__|${SERVER_LAN_MAC}|g" \
+    -e "s|__SERVER_LAN_IP__|${SERVER_LAN_IP}|g" \
+    "$LAB_DIR/user-data-server"
 
 cat > "$LAB_DIR/meta-data-server" <<METADATA
 instance-id: ${SERVER_VM}-001
@@ -282,6 +319,7 @@ info "Creating cloud-init for $CLIENT_VM..."
 cat > "$LAB_DIR/user-data-client" <<'USERDATA'
 #cloud-config
 hostname: dns-lab-client
+manage_etc_hosts: true
 users:
   - name: labuser
     plain_text_passwd: labpass
@@ -327,11 +365,26 @@ write_files:
       fi
   - path: /etc/dnsmasq.d/lab-dns.conf
     content: |
-      # Forward all queries to the DNS lab server via host port forwarding
+      # Forward every query to the lab's authoritative server, straight over
+      # the lab LAN. (This used to point at 10.0.2.2#5354 — the host, on a
+      # hardcoded port — but QLab allocates host ports dynamically, so that
+      # number was almost never the right one and resolution simply hung.)
       no-resolv
-      server=10.0.2.2#5354
+      server=__SERVER_LAN_IP__
       # Add lab.qlab to search domain
       domain=lab.qlab
+  - path: /etc/netplan/60-internal.yaml
+    permissions: '0600'
+    content: |
+      network:
+        version: 2
+        ethernets:
+          dnslan:
+            match:
+              macaddress: "__CLIENT_LAN_MAC__"
+            addresses:
+              - __CLIENT_LAN_IP__/24
+
   - path: /etc/motd.raw
     content: |
       \033[1;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m
@@ -376,6 +429,7 @@ runcmd:
   - printf '%b\n' "$(cat /etc/motd.raw)" > /etc/motd
   - rm -f /etc/motd.raw
   - systemctl restart sshd
+  - netplan apply
   - rm -f /etc/resolv.conf
   - echo "nameserver 127.0.0.1" > /etc/resolv.conf
   - echo "search lab.qlab" >> /etc/resolv.conf
@@ -388,7 +442,20 @@ runcmd:
 USERDATA
 
 # Inject the SSH public key into user-data
-sed -i "s|__QLAB_SSH_PUB_KEY__|${QLAB_SSH_PUB_KEY:-}|g" "$LAB_DIR/user-data-client"
+sed -i \
+    -e "s|__QLAB_SSH_PUB_KEY__|${QLAB_SSH_PUB_KEY:-}|g" \
+    -e "s|__CLIENT_LAN_MAC__|${CLIENT_LAN_MAC}|g" \
+    -e "s|__CLIENT_LAN_IP__|${CLIENT_LAN_IP}|g" \
+    -e "s|__SERVER_LAN_IP__|${SERVER_LAN_IP}|g" \
+    "$LAB_DIR/user-data-client"
+
+for ud in "$LAB_DIR/user-data-server" "$LAB_DIR/user-data-client"; do
+    if grep -q '__[A-Z_]*__' "$ud"; then
+        error "Unresolved placeholders in $ud:"
+        grep -o '__[A-Z_]*__' "$ud" | sort -u >&2
+        exit 1
+    fi
+done
 
 cat > "$LAB_DIR/meta-data-client" <<METADATA
 instance-id: ${CLIENT_VM}-001
@@ -458,7 +525,9 @@ register_vm_cleanup STARTED_VMS
 info "Starting $SERVER_VM..."
 start_vm_or_fail STARTED_VMS "$OVERLAY_SERVER" "$CIDATA_SERVER" "$MEMORY" "$SERVER_VM" auto \
     "hostfwd=udp::0-:53" \
-    "hostfwd=tcp::0-:53" || exit 1
+    "hostfwd=tcp::0-:53" \
+    "-netdev" "socket,id=vlan1,mcast=${INTERNAL_MCAST},localaddr=127.0.0.1" \
+    "-device" "virtio-net-pci,netdev=vlan1,mac=${SERVER_LAN_MAC}" || exit 1
 SERVER_SSH_PORT="$LAST_SSH_PORT"
 
 # Read the dynamically allocated DNS port from .ports file
@@ -470,7 +539,9 @@ fi
 echo ""
 
 info "Starting $CLIENT_VM..."
-start_vm_or_fail STARTED_VMS "$OVERLAY_CLIENT" "$CIDATA_CLIENT" "$MEMORY" "$CLIENT_VM" auto || exit 1
+start_vm_or_fail STARTED_VMS "$OVERLAY_CLIENT" "$CIDATA_CLIENT" "$MEMORY" "$CLIENT_VM" auto \
+    "-netdev" "socket,id=vlan1,mcast=${INTERNAL_MCAST},localaddr=127.0.0.1" \
+    "-device" "virtio-net-pci,netdev=vlan1,mac=${CLIENT_LAN_MAC}" || exit 1
 CLIENT_SSH_PORT="$LAST_SSH_PORT"
 
 # Successful start — disable cleanup trap

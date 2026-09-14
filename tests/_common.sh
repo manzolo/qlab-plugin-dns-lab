@@ -27,6 +27,11 @@ _ssh_base_opts=(-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o L
 ssh_server() { ssh "${_ssh_base_opts[@]}" -i "$SSH_KEY" -p "$SERVER_PORT" labuser@localhost "$@"; }
 ssh_client() { ssh "${_ssh_base_opts[@]}" -i "$SSH_KEY" -p "$CLIENT_PORT" labuser@localhost "$@"; }
 
+# The lab LAN: the subnet the zone file itself advertises, so ns1.lab.qlab is
+# genuinely the server's address and not a decorative record.
+SERVER_LAN_IP="10.20.30.1"
+CLIENT_LAN_IP="10.20.30.50"
+
 cleanup_dns() {
     ssh_server "sudo cp /etc/bind/zones/db.lab.qlab.bak /etc/bind/zones/db.lab.qlab 2>/dev/null || true; sudo rndc reload 2>/dev/null || sudo systemctl reload bind9 2>/dev/null" 2>/dev/null || true
 }

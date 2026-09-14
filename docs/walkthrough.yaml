@@ -1,0 +1,64 @@
+# dns-lab — what the walkthrough builder captures from a running lab.
+#   tools/walkthrough/build.py <plugin-dir> --live --workspace <ws>
+
+evidence:
+  - id: topology
+    cmd: |
+      echo "--- server ---"
+      qlab shell dns-lab-server --no-wait -c 'ip -br addr | grep -vE '^lo ''
+      echo "--- client ---"
+      qlab shell dns-lab-client --no-wait -c 'ip -br addr | grep -vE '^lo ''
+  - id: zones
+    vm: dns-lab-server
+    cmd: cat /etc/bind/named.conf.local
+  - id: zonefile
+    vm: dns-lab-server
+    cmd: grep -vE '^\s*;|^\s*$' /etc/bind/zones/db.lab.qlab
+  - id: named-status
+    vm: dns-lab-server
+    cmd: 'systemctl is-active named; named-checkconf && echo "named-checkconf: OK"; named-checkzone lab.qlab /etc/bind/zones/db.lab.qlab'
+  - id: resolv-server
+    vm: dns-lab-server
+    cmd: cat /etc/resolv.conf
+  - id: resolv-client
+    vm: dns-lab-client
+    cmd: 'cat /etc/resolv.conf; echo; cat /etc/dnsmasq.d/lab-dns.conf'
+
+  # A query travelling from the client to the server, seen on the wire.
+  - id: query-on-the-wire
+    cmd: |
+      set -u
+      qlab shell dns-lab-server --no-wait -c \
+        'sudo timeout 25 tcpdump -i ens4 -n -c 4 port 53' > /tmp/qlab-dns-cap.txt 2>&1 &
+      cap=$!
+      sleep 4
+      qlab shell dns-lab-client --no-wait -c \
+        'dig @10.20.30.1 web.lab.qlab +noall +answer; dig @10.20.30.1 -x 10.20.30.10 +short' \
+        > /tmp/qlab-dns-dig.txt 2>&1
+      wait $cap
+      echo "--- on the client ---"
+      cat /tmp/qlab-dns-dig.txt
+      echo
+      echo "--- on the server: tcpdump -i any -n port 53 ---"
+      grep -aE 'IP ' /tmp/qlab-dns-cap.txt | head -6
+
+  - id: record-types
+    vm: dns-lab-client
+    cmd: |
+      for t in A AAAA CNAME MX TXT SRV NS; do
+        case $t in
+          CNAME) n=www.lab.qlab ;;
+          SRV)   n=_http._tcp.lab.qlab ;;
+          *)     n=lab.qlab ;;
+        esac
+        [ $t = A ] || [ $t = AAAA ] && n=web.lab.qlab
+        printf '%-6s %-24s %s\n' "$t" "$n" "$(dig +short $t $n | tr '\n' ' ')"
+      done
+  - id: search-domain
+    vm: dns-lab-client
+    cmd: |
+      echo "$ dig www +short";          dig www +short;          echo "(empty: dig ignores the search list)"
+      echo "$ dig +search www +short";  dig +search www +short
+      echo "$ host www";                host www
+  - id: qlab-test
+    cmd: qlab test dns-lab 2>&1 || true

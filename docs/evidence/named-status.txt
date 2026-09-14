@@ -1,0 +1,4 @@
+active
+named-checkconf: OK
+zone lab.qlab/IN: loaded serial 2024010101
+OK

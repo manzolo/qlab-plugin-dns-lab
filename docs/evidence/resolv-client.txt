@@ -1,0 +1,11 @@
+nameserver 127.0.0.1
+search lab.qlab
+
+# Forward every query to the lab's authoritative server, straight over
+# the lab LAN. (This used to point at 10.0.2.2#5354 — the host, on a
+# hardcoded port — but QLab allocates host ports dynamically, so that
+# number was almost never the right one and resolution simply hung.)
+no-resolv
+server=10.20.30.1
+# Add lab.qlab to search domain
+domain=lab.qlab

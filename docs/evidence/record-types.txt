@@ -1,0 +1,7 @@
+A      web.lab.qlab             10.20.30.10 
+AAAA   web.lab.qlab             2001:db8::10 
+CNAME  www.lab.qlab             web.lab.qlab. 
+MX     lab.qlab                 20 mail2.lab.qlab. 10 mail.lab.qlab. 
+TXT    lab.qlab                 "v=spf1 mx -all" 
+SRV    _http._tcp.lab.qlab      10 0 80 web.lab.qlab. 
+NS     lab.qlab                 ns1.lab.qlab. 
